@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="common">
+  <meta charset="UTF-8" />
+  <!-- 공통으로 쓰이는 css파일을넣는다.-->
+  <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+  <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script>
+    /** * ajax 공통모듈 * ------------------ */
+    var commonAjax = function(url, data, fn, methodType, errormsg){
+      // 데이터 값이 잘 넘어왔는지 확인
+      console.log(url);
+      console.log(data);
+      console.log(fn);
+      console.log(methodType);
+      console.log(errormsg);
+      var request = $.ajax({
+        url: url,
+        method: methodType,
+        data: data,
+        contentType: 'application/json; charset=utf-8',
+        dataType: "json"
+      });
+
+      // 콜백함수
+      request.done(fn);
+      request.fail(function( jqXHR, textStatus ) { alert( errormsg + textStatus ); });
+    }
+  </script>
+  <!-- 컨텐츠페이지의 스크립트 영역이 들어감 -->
+</head>
+</html>

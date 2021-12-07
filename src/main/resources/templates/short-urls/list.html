@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="fragments/common :: common"></head>
+<head>
+    <title>단축URL 목록</title>
+    <script>
+        const errorMsg = "데이터를 불러올수 없습니다."
+        const apiUrl = "/api/short-urls";
+        const maxPageCount = 5;
+
+        var pageNo = 1;
+        var pageSize = 10;
+        var sortBy = "createdDate-desc";
+
+        var dataList = [];
+        var paging = {};
+
+        function getShortUrlList(page, size) {
+            pageNo = page;
+            pageSize = size;
+
+            var fn = function( data ) {
+                console.log(JSON.stringify(data , null, 2 ) )
+                dataList = data.result;
+                paging = data.paging;
+
+                $("#tbody").empty();
+                data.result.forEach(item => {
+                    var innerHtml = `
+                    <tr>
+                        <th scope="row">${item.id}</th>
+                        <td>${item.hash}</td>
+                        <td><a href="${item.url}" target="_blank">${item.url}</a></td>
+                        <td>${item.originUrl}</td>
+                        <td>${item.expireDate}</td>
+                        <td>${item.memo}</td>
+                        <td>${item.createdDate}</td>
+                    </tr>`;
+                    $("#tbody").append(innerHtml);
+                })
+                pagination();
+            }
+            commonAjax(apiUrl, { pageNo, pageSize, sortBy }, fn, "GET", errorMsg);
+        }
+
+        function pagination(){
+            // [페이징 목록 초기화 실시]
+            $("#dyn_ul").empty();
+
+            // [생성된 테이블 tr 개수 확인 >> 페이징 처리 5개씩 목록 자름]
+            var startIndex = 1; // 생성 시작 페이지
+            //var endIndex = $("#dyn_tbody tr").length; // tbody에 동적으로 추가된 tr 개수 확인
+            var endIndex = paging.totalCount ; // 배열에 있는 길이 확인
+
+            // [tr 개수에 따라 페이징 해야할 개수 확인]
+            var pageCount = 0;
+            var pagePlus = 0;
+            if(endIndex > pageSize){ // tr 행 개수가 5 이상인 경우 (임의로 설정)
+                pageCount = Math.floor(endIndex / pageSize); //생성될 페이지 수 (소수점 버림)
+                pagePlus = endIndex % pageSize; //추가 나머지 자식 수
+                if(pagePlus > 0){ //추가 자식수가 있는경우 >> 페이지 추가
+                    pageCount = pageCount + 1;
+                }
+                console.log("");
+                console.log("[pageInsert] : [pageCount] : " + pageCount);
+                console.log("[pageInsert] : [pagePlus] : " + pagePlus);
+                console.log("");
+            }
+
+            // [동적 ul 페이징 처리 실시]
+            if(pageCount == 1){ //생성해야할 페이지가 1페이지인 경우
+                var insertUl = "<li class='page-item'>"; // 변수 선언
+                insertUl += insertUl + "<a class='page-link' href='javascript:void(0)' onclick = 'getShortUrlList(1, pageSize);'>";
+                insertUl += insertUl + String(1);
+                insertUl += insertUl + "</a></li>";
+                $("#dyn_ul").append(insertUl); //jquery append 사용해 동적으로 추가 실시
+            }
+            else if(pageCount >= 2){ //생성해야할 페이지가 2페이지 이상인 경우
+                // 이전 페이지 추가 실시
+                var insertSTR = paging.hasPrev ? "<li class='page-item'>" : "<li class='page-item disabled'>"; // 변수 선언
+                insertSTR = insertSTR + "<a class='page-link' href='javascript:void(0)' onclick = 'getShortUrlList("+ (pageNo - 1) + "," + pageSize +");'>";
+                insertSTR = insertSTR + "<<";
+                insertSTR = insertSTR + "</a></li>";
+                $("#dyn_ul").append(insertSTR); //jquery append 사용해 동적으로 추가 실시
+
+                // 특정 1, 2, 3 .. 페이지 추가 실시
+                var count = 1;
+                for(var i=startIndex; i<=pageCount; i++){
+                    if(count > maxPageCount){ //최대로 생성될 페이지 개수가 된 경우
+                        pageNo = i - maxPageCount; //생성된 페이지 초기값 저장 (초기 i값 4 탈출 인경우 >> 1값 저장)
+                        break; //for 반복문 탈출
+                    }
+                    var insertUl = i == pageNo ? "<li class='page-item active'>" : "<li class='page-item'>"; // 변수 선언
+                    insertUl = insertUl + "<a class='page-link' href='javascript:void(0)' onclick = 'getShortUrlList("+i+ "," + pageSize +");'>";
+                    insertUl = insertUl + String(i);
+                    insertUl = insertUl + "</a></li>";
+                    $("#dyn_ul").append(insertUl); //jquery append 사용해 동적으로 추가 실시
+                    count ++;
+                }
+
+                // 다음 페이지 추가 실시
+                var insertEND = paging.hasNext ? "<li class='page-item'>" : "<li class='page-item disabled'>"; // 변수 선언
+                insertEND = insertEND + "<a class='page-link' href='javascript:void(0)' onclick = 'getShortUrlList("+ (pageNo + 1) + "," + pageSize +");'>";
+                insertEND = insertEND + ">>";
+                insertEND = insertEND + "</a></li>";
+                $("#dyn_ul").append(insertEND); //jquery append 사용해 동적으로 추가 실시
+            }
+
+        };
+
+        $(function() {
+            getShortUrlList(pageNo, pageSize)
+
+            $("#registerBtn").click(function() {
+                window.location.replace("/view/short-urls/register");
+            })
+        })
+
+
+    </script>
+</head>
+
+<body class="py-4">
+<main>
+    <div class="container">
+        <h2>단축URL 목록</h2>
+        <br/>
+
+        <div class="table-responsive">
+            <table class="table" id="table">
+                <thead>
+                <tr>
+                    <th scope="col" >ID</th>
+                    <th scope="col" >해쉬</th>
+                    <th scope="col" >단축URL</th>
+                    <th scope="col" >원본 URL</th>
+                    <th scope="col" >만료일자</th>
+                    <th scope="col" >메모</th>
+                    <th scope="col" >생성일시</th>
+                </tr>
+                </thead>
+                <tbody id="tbody">
+                </tbody>
+            </table>
+        </div>
+
+        <nav aria-label="Page navigation example">
+            <ul class="pagination" id="dyn_ul" style="justify-content: center"></ul>
+        </nav>
+
+        <div class="row">
+            <button type="button" id="registerBtn" class="btn btn-primary btn-lg">단축URL 등록</button>
+        </div>
+
+    </div>
+</main>
+</body>
+</html>
